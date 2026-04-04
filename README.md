@@ -104,14 +104,3 @@ Set `CHIEF_OF_STAFF_DB_PATH=/tmp/chief_of_staff.db` if you want it explicit on C
 | `ALLOWED_ORIGINS` | CORS for `main.py`. |
 
 **Models:** This repo targets **Vertex AI / Gemini** via ADK, which matches `adk deploy cloud_run`. Using **Anthropic** instead would require a separate integration path (not the default ADK model stack on Cloud Run).
-
-## Hackathon demo tip
-
-1. User: *“I need to ship the API redesign by Friday.”*  
-2. Orchestrator decomposes tasks, lists/creates calendar blocks, logs a **decision**.  
-3. Hit **Run proactive scan** on `/workspace/` or wait for Scheduler on `POST /api/proactive/scan`.  
-4. Show a **new meeting** conflicting with focus time → second scan surfaces a **gap** / **dependency** suggestion without a new chat prompt.
-
-## Disclaimer
-
-Sample code for demos; tighten auth, persistence, and quotas for production.
