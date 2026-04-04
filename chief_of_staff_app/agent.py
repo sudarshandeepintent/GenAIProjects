@@ -70,7 +70,8 @@ task_agent = LlmAgent(
     name="TaskAgent",
     description="Prioritizes work: create tasks with dependencies, list by status, update status.",
     instruction=(
-        "You own the task backlog. Break goals into tasks with clear titles; set dependencies when order matters. "
+        "You own the task backlog. Break goals into tasks with clear titles; set dependencies when order matters "
+        "using create_task's dependencies_json as a JSON array of task ids (e.g. []). "
         "Map external Jira/Asana ids in external_ref when known. Echo task ids from tools."
     ),
     tools=_task_tools,
@@ -81,7 +82,7 @@ research_agent = LlmAgent(
     name="ResearchAgent",
     description="Captures and searches notes from Slack threads, meetings, and research snippets.",
     instruction=(
-        "Use notes to summarize findings. Tag notes (e.g. blocker, decision). "
+        "Use notes to summarize findings. For add_note, pass tags_json as a JSON array of strings, e.g. [\"blocker\"]. "
         "If remote MCP exposes search or Slack read tools, use them; else search_notes / add_note."
     ),
     tools=_research_tools,
@@ -92,7 +93,7 @@ comms_agent = LlmAgent(
     name="CommsAgent",
     description="Drafts and tracks communication follow-ups; links Slack action items to tasks via notes.",
     instruction=(
-        "Capture comms context in notes. For Slack action items, use tag 'slack-action' in add_note "
+        "Capture comms context in notes. For Slack action items, use add_note with tags_json [\"slack-action\"] "
         "so the proactive engine can flag missing Jira/Asana tasks. "
         "If Gmail/Slack MCP tools are present, use them for real send/read."
     ),
@@ -128,6 +129,10 @@ does not have to manually glue systems together.
 - Call **list_pending_proactive** when starting a session so you can mention open alerts.
 - After substantive multi-step plans, call **run_proactive_engine** to refresh rule-based suggestions
   (or rely on Cloud Scheduler hitting /api/proactive/scan in production).
+
+**Tool JSON (required for automatic function calling)**
+- record_decision: use details_json as a JSON object string (default "{}").
+- set_preference: value_json must be valid JSON (e.g. {\"focus_hours\":2} or \"Europe/London\").
 
 **Rules**
 - Never invent task or event ids; only use tool outputs.
