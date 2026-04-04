@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chief of Staff — workspace</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #5b8def;
+      --warn: #e8a849;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #2a3545;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem;
+    }
+    h1 { font-size: 1.15rem; font-weight: 600; margin: 0; }
+    .sub { color: var(--muted); font-size: 0.875rem; }
+    main {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      padding: 1.25rem 1.5rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    section {
+      background: var(--panel);
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+      border: 1px solid #2a3545;
+    }
+    section h2 {
+      margin: 0 0 0.75rem;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    ul { list-style: none; margin: 0; padding: 0; }
+    li {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #2a3545;
+      font-size: 0.9rem;
+    }
+    li:last-child { border-bottom: 0; }
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      background: #2a3545;
+      color: var(--warn);
+      margin-right: 0.35rem;
+    }
+    .empty { color: var(--muted); font-size: 0.875rem; }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: 0;
+      padding: 0.45rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #status { font-size: 0.8rem; color: var(--muted); }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Chief of Staff workspace</h1>
+    <span class="sub">Live read of structured memory + proactive queue</span>
+    <button type="button" id="refresh">Refresh</button>
+    <button type="button" id="scan">Run proactive scan</button>
+    <span id="status"></span>
+  </header>
+  <main>
+    <section>
+      <h2>Proactive</h2>
+      <ul id="proactive"></ul>
+    </section>
+    <section>
+      <h2>Tasks</h2>
+      <ul id="tasks"></ul>
+    </section>
+    <section>
+      <h2>Calendar</h2>
+      <ul id="events"></ul>
+    </section>
+    <section>
+      <h2>Recent notes</h2>
+      <ul id="notes"></ul>
+    </section>
+    <section>
+      <h2>Recent decisions</h2>
+      <ul id="decisions"></ul>
+    </section>
+  </main>
+  <p class="sub" style="padding: 0 1.5rem 2rem; max-width: 1200px; margin: 0 auto;">
+    Chat UI: app root (ADK). This page: <code>/workspace/</code>. JSON: <a href="/api/summary">/api/summary</a>
+  </p>
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function li(html) {
+      const el = document.createElement('li');
+      el.innerHTML = html;
+      return el;
+    }
+
+    async function loadSummary() {
+      $('status').textContent = 'Loading…';
+      try {
+        const r = await fetch('/api/summary');
+        const d = await r.json();
+        $('status').textContent = new Date().toLocaleTimeString();
+
+        const p = $('proactive');
+        p.innerHTML = '';
+        const sug = d.proactive?.suggestions || [];
+        if (!sug.length) p.appendChild(li('<span class="empty">No pending suggestions</span>'));
+        else sug.forEach((s) => {
+          p.appendChild(li(`<span class="badge">${escapeHtml(s.kind)}</span>${escapeHtml(s.title)}<br/><span class="empty">${escapeHtml(s.body)}</span>`));
+        });
+
+        const t = $('tasks');
+        t.innerHTML = '';
+        const tasks = d.tasks?.tasks || [];
+        if (!tasks.length) t.appendChild(li('<span class="empty">No tasks</span>'));
+        else tasks.slice(0, 15).forEach((x) => {
+          t.appendChild(li(`<strong>${escapeHtml(x.title)}</strong> <span class="empty">· ${escapeHtml(x.status)}</span>`));
+        });
+
+        const e = $('events');
+        e.innerHTML = '';
+        const evs = d.events?.events || [];
+        if (!evs.length) e.appendChild(li('<span class="empty">No events</span>'));
+        else evs.slice(0, 15).forEach((x) => {
+          e.appendChild(li(`${escapeHtml(x.start_at)} — ${escapeHtml(x.title)}`));
+        });
+
+        const n = $('notes');
+        n.innerHTML = '';
+        const notes = d.notes?.notes || [];
+        if (!notes.length) n.appendChild(li('<span class="empty">No notes</span>'));
+        else notes.forEach((x) => {
+          n.appendChild(li(`<strong>${escapeHtml(x.title)}</strong>`));
+        });
+
+        const dec = $('decisions');
+        dec.innerHTML = '';
+        const ds = d.decisions?.decisions || [];
+        if (!ds.length) dec.appendChild(li('<span class="empty">No decisions logged</span>'));
+        else ds.forEach((x) => {
+          dec.appendChild(li(`<span class="empty">${escapeHtml(x.agent_name)}</span> — ${escapeHtml(x.summary)}`));
+        });
+      } catch (err) {
+        $('status').textContent = 'Error: ' + err.message;
+      }
+    }
+
+    function escapeHtml(s) {
+      if (!s) return '';
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    $('refresh').addEventListener('click', loadSummary);
+    $('scan').addEventListener('click', async () => {
+      $('scan').disabled = true;
+      $('status').textContent = 'Scanning…';
+      try {
+        await fetch('/api/proactive/scan', { method: 'POST' });
+        await loadSummary();
+      } finally {
+        $('scan').disabled = false;
+      }
+    });
+
+    loadSummary();
+  </script>
+</body>
+</html>
