@@ -2,31 +2,74 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from . import store
 
 
+def _json_list(raw: str, field: str) -> tuple[list[str] | None, str | None]:
+    s = (raw or "").strip()
+    if not s:
+        return [], None
+    try:
+        v = json.loads(s)
+        if v is None:
+            return [], None
+        if not isinstance(v, list):
+            return None, f"{field} must be a JSON array of strings"
+        out = [str(x) for x in v]
+        return out, None
+    except json.JSONDecodeError as e:
+        return None, f"{field} is invalid JSON: {e}"
+
+
+def _json_value(raw: str) -> tuple[Any | None, str | None]:
+    s = (raw or "").strip()
+    if not s:
+        return None, "value_json is required (JSON string, number, object, array, true, false, null)"
+    try:
+        return json.loads(s), None
+    except json.JSONDecodeError as e:
+        return None, f"value_json is invalid JSON: {e}"
+
+
+def _json_object(raw: str, field: str) -> tuple[dict[str, Any] | None, str | None]:
+    s = (raw or "").strip() or "{}"
+    try:
+        v = json.loads(s)
+        if not isinstance(v, dict):
+            return None, f"{field} must be a JSON object"
+        return v, None
+    except json.JSONDecodeError as e:
+        return None, f"{field} is invalid JSON: {e}"
+
+
 def create_task(
     title: str,
     description: str = "",
-    due_at: str | None = None,
-    dependencies: list[str] | None = None,
+    due_at: str = "",
+    dependencies_json: str = "[]",
     external_ref: str = "",
 ) -> dict:
-    """Create a task. dependencies are other task ids. external_ref: Jira/Asana id if synced."""
+    """Create a task. dependencies_json: JSON array of task ids, e.g. []. external_ref: Jira/Asana id."""
+    deps, err = _json_list(dependencies_json, "dependencies_json")
+    if err:
+        return {"status": "error", "error_message": err}
+    due = due_at.strip() or None
     return store.create_task(
         title=title,
         description=description,
-        due_at=due_at,
-        dependencies=dependencies,
+        due_at=due,
+        dependencies=deps,
         external_ref=external_ref,
     )
 
 
-def list_tasks(status_filter: str | None = None, limit: int = 50) -> dict:
-    """List tasks. status_filter: pending, in_progress, done, cancelled."""
-    return store.list_tasks(status_filter=status_filter, limit=limit)
+def list_tasks(status_filter: str = "", limit: int = 50) -> dict:
+    """List tasks. status_filter: empty for all, or pending, in_progress, done, cancelled."""
+    sf = status_filter.strip() or None
+    return store.list_tasks(status_filter=sf, limit=limit)
 
 
 def update_task_status(task_id: str, status: str) -> dict:
@@ -46,13 +89,17 @@ def create_calendar_event(
     )
 
 
-def list_calendar_events(from_iso: str | None = None, limit: int = 50) -> dict:
-    """List events; optional lower bound on start_at."""
-    return store.list_calendar_events(from_iso=from_iso, limit=limit)
+def list_calendar_events(from_iso: str = "", limit: int = 50) -> dict:
+    """List events. from_iso: empty for all, or ISO lower bound on start_at."""
+    fi = from_iso.strip() or None
+    return store.list_calendar_events(from_iso=fi, limit=limit)
 
 
-def add_note(title: str, body: str, tags: list[str] | None = None) -> dict:
-    """Add a note. Use tag 'slack-action' for Slack thread action items to surface proactively."""
+def add_note(title: str, body: str, tags_json: str = "[]") -> dict:
+    """Add a note. tags_json: JSON array of strings, e.g. ["slack-action"]."""
+    tags, err = _json_list(tags_json, "tags_json")
+    if err:
+        return {"status": "error", "error_message": err}
     return store.add_note(title=title, body=body, tags=tags)
 
 
@@ -66,15 +113,21 @@ def list_recent_notes(limit: int = 20) -> dict:
     return store.list_recent_notes(limit=limit)
 
 
-def record_decision(agent_name: str, summary: str, details: dict[str, Any] | None = None) -> dict:
-    """Persist orchestration or specialist decision for audit and proactive context."""
+def record_decision(agent_name: str, summary: str, details_json: str = "{}") -> dict:
+    """Persist orchestration or specialist decision. details_json: JSON object, e.g. {}."""
+    details, err = _json_object(details_json, "details_json")
+    if err:
+        return {"status": "error", "error_message": err}
     return store.record_agent_decision(
         agent_name=agent_name, summary=summary, details=details
     )
 
 
-def set_preference(key: str, value: Any) -> dict:
-    """Store user preference (timezone, focus hours, notification style)."""
+def set_preference(key: str, value_json: str) -> dict:
+    """Store user preference. value_json: any JSON value, e.g. \"Europe/London\" or {\"start\":\"09:00\"}."""
+    value, err = _json_value(value_json)
+    if err:
+        return {"status": "error", "error_message": err}
     return store.set_user_pref(key=key, value=value)
 
 
