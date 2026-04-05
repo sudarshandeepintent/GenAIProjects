@@ -1,47 +1,7 @@
 # Chief of Staff AI (“JARVIS for your work day”)
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            USER INTERFACE                                   │
-│   ┌─────────────────────────┐        ┌─────────────────────────────────┐   │
-│   │   ADK Chat UI (/)       │        │   Dashboard (/workspace/)        │   │
-│   │   Conversational AI     │        │   Tasks · Calendar · Notes ·     │   │
-│   │   via Google ADK        │        │   Proactive Alerts · Decisions   │   │
-│   └────────────┬────────────┘        └────────────────┬────────────────┘   │
-└────────────────┼────────────────────────────────────── ┼────────────────────┘
-                 │                                        │ /api/summary
-                 ▼                                        ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                      FastAPI Server (main.py)                               │
-│   /api/health  ·  /api/summary  ·  /api/proactive/scan                     │
-└────────────────────────────┬────────────────────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│           ChiefOfStaffOrchestrator  ← ROOT AGENT (Gemini 2.5 Flash)        │
-│                       Delegates, coordinates, remembers                     │
-└────┬──────────────┬──────────────┬──────────────┬──────────────────────────┘
-     │              │              │              │
-     ▼              ▼              ▼              ▼
-┌─────────┐   ┌──────────┐  ┌──────────┐  ┌──────────┐   ← Specialist Agents
-│Calendar │   │  Task    │  │ Research │  │  Comms   │     (Each is an LlmAgent
-│ Agent   │   │  Agent   │  │  Agent   │  │  Agent   │      with own tools)
-└────┬────┘   └────┬─────┘  └────┬─────┘  └────┬─────┘
-     │              │              │              │
-     └──────────────┴──────────────┴──────────────┘
-                             │
-             ┌───────────────┼───────────────────┐
-             ▼               ▼                   ▼
-    ┌─────────────┐  ┌──────────────┐  ┌──────────────────────┐
-    │  tools.py   │  │ proactive.py │  │    mcp_bridge.py      │
-    │ 14 Function │  │  Rule Engine │  │  Optional MCP Remote  │
-    │   Tools     │  │  (3 rules)   │  │  Google · Slack · Jira│
-    └──────┬──────┘  └──────┬───────┘  └──────────────────────┘
-           │                │
-           ▼                ▼
-    ┌──────────────────────────────────────┐
-    │         SQLite (store.py)            │
-    │  tasks · calendar_events · notes     │
-    │  decisions · prefs · suggestions     │
-    └──────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────
+<img width="650" height="721" alt="Screenshot 2026-04-05 at 9 44 01 AM" src="https://github.com/user-attachments/assets/4a81ea50-2210-43dd-a2ef-769aa03ff8de" />
+
 
 
 Multi-agent [Google ADK](https://google.github.io/adk-docs/) app: an **orchestrator** delegates to **calendar**, **task**, **research**, and **comms** specialists, persists **structured memory** (SQLite), and runs a **proactive engine** that can flag conflicts and gaps without the user asking.
