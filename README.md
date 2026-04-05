@@ -48,7 +48,7 @@ pip install -r requirements.txt
 cp .env.example .env   # fill in project / Vertex or API key
 export GOOGLE_CLOUD_PROJECT=your-project
 export GOOGLE_GENAI_USE_VERTEXAI=True
-export ADK_MODEL=gemini-2.0-flash
+export ADK_MODEL=gemini-3.1-pro-preview
 uvicorn main:app --reload --host 0.0.0.0 --port 8080
 ```
 
@@ -87,7 +87,7 @@ gcloud run deploy chief-of-staff-api \
   --source . \
   --region europe-west1 \
   --project "$PROJECT_ID" \
-  --set-env-vars="GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_GENAI_USE_VERTEXAI=true,ADK_MODEL=gemini-2.0-flash"
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_GENAI_USE_VERTEXAI=true,ADK_MODEL=gemini-3.1-pro-preview"
 ```
 
 Set `CHIEF_OF_STAFF_DB_PATH=/tmp/chief_of_staff.db` if you want it explicit on Cloud Run.
@@ -96,12 +96,14 @@ Set `CHIEF_OF_STAFF_DB_PATH=/tmp/chief_of_staff.db` if you want it explicit on C
 
 | Variable | Purpose |
 |----------|---------|
-| `ADK_MODEL` | Gemini model id (default `gemini-2.0-flash`). |
+| `ADK_MODEL` | Gemini model id on Vertex (default `gemini-3.1-pro-preview`). |
 | `CHIEF_OF_STAFF_DB_PATH` | SQLite path for structured memory. |
 | `CHIEF_OF_STAFF_MCP_URL` | Optional Streamable HTTP MCP URL. |
 | `CHIEF_OF_STAFF_MCP_HEADERS` | Optional JSON headers for MCP. |
 | `SESSION_SERVICE_URI` | Optional ADK session DB (e.g. `sqlite+aiosqlite:////tmp/adk_sessions.db`). |
 | `ALLOWED_ORIGINS` | CORS for `main.py`. |
+
+Use a Vertex region that hosts the model (e.g. `europe-west1` or `us-central1`). If you still see **404 NOT_FOUND**, enable the **Vertex AI API**, confirm preview models are allowed for your project, or try another region / model id via `ADK_MODEL`.
 
 **Models:** This repo targets **Vertex AI / Gemini** via ADK, which matches `adk deploy cloud_run`. Using **Anthropic** instead would require a separate integration path (not the default ADK model stack on Cloud Run).
 
