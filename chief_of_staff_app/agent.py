@@ -18,7 +18,7 @@ try:
 except ImportError:
     pass
 
-MODEL = os.environ.get("ADK_MODEL", "gemini-3.1-pro-preview")
+MODEL = os.environ.get("ADK_MODEL", "gemini-2.5-flash")
 
 _calendar_tools = [
     FunctionTool(func=tools.create_calendar_event),
